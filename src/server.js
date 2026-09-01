@@ -10,6 +10,12 @@ const {
     skill
 } = require('./alexa/skill');
 
+const {
+    initializeWhatsApp,
+    destroyWhatsApp,
+    getWhatsAppStatus
+} = require('./whatsapp/client');
+
 
 const app = express();
 
@@ -33,22 +39,73 @@ app.post(
 app.get('/health', (req, res) => {
 
     res.json({
-        status: 'ok',
-        service: 'alexa-whatsapp'
-    });
 
+        status: 'ok',
+
+        service: 'alexa-whatsapp',
+
+        whatsapp:
+            getWhatsAppStatus()
+    });
 });
 
 
-app.listen(
+const server = app.listen(
     PORT,
     '127.0.0.1',
     () => {
 
         console.log('');
-        console.log(`[Server] http://localhost:${PORT}`);
-        console.log(`[Server] Alexa: http://localhost:${PORT}/alexa`);
-        console.log(`[Server] Health: http://localhost:${PORT}/health`);
+        console.log(
+            `[Server] http://localhost:${PORT}`
+        );
+
+        console.log(
+            `[Server] Alexa: http://localhost:${PORT}/alexa`
+        );
+
+        console.log(
+            `[Server] Health: http://localhost:${PORT}/health`
+        );
+
         console.log('');
+
+        initializeWhatsApp()
+            .catch((error) => {
+
+                console.error(
+                    '[WhatsApp] Inicialização falhou:',
+                    error.message
+                );
+            });
     }
+);
+
+
+async function shutdown(signal) {
+
+    console.log('');
+    console.log(
+        `[Server] ${signal} recebido. Encerrando...`
+    );
+
+    server.close(
+        async () => {
+
+            await destroyWhatsApp();
+
+            process.exit(0);
+        }
+    );
+}
+
+
+process.on(
+    'SIGINT',
+    () => shutdown('SIGINT')
+);
+
+process.on(
+    'SIGTERM',
+    () => shutdown('SIGTERM')
 );
