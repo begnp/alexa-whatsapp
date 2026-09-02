@@ -208,6 +208,96 @@ function getWhatsAppStatus() {
     };
 }
 
+function waitForWhatsAppReady(timeoutMs = 60000) {
+
+    if (state.ready) {
+        return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+
+        const timeout = setTimeout(() => {
+
+            cleanup();
+
+            reject(
+                new Error(
+                    'Tempo limite excedido aguardando o WhatsApp.'
+                )
+            );
+
+        }, timeoutMs);
+
+
+        function cleanup() {
+
+            clearTimeout(timeout);
+
+            client.removeListener(
+                'ready',
+                handleReady
+            );
+
+            client.removeListener(
+                'auth_failure',
+                handleAuthFailure
+            );
+
+            client.removeListener(
+                'disconnected',
+                handleDisconnected
+            );
+        }
+
+
+        function handleReady() {
+
+            cleanup();
+            resolve();
+        }
+
+
+        function handleAuthFailure(message) {
+
+            cleanup();
+
+            reject(
+                new Error(
+                    `Falha de autenticação: ${message}`
+                )
+            );
+        }
+
+
+        function handleDisconnected(reason) {
+
+            cleanup();
+
+            reject(
+                new Error(
+                    `WhatsApp desconectado: ${reason}`
+                )
+            );
+        }
+
+
+        client.once(
+            'ready',
+            handleReady
+        );
+
+        client.once(
+            'auth_failure',
+            handleAuthFailure
+        );
+
+        client.once(
+            'disconnected',
+            handleDisconnected
+        );
+    });
+}
+
 
 module.exports = {
 
@@ -217,5 +307,7 @@ module.exports = {
 
     destroyWhatsApp,
 
-    getWhatsAppStatus
+    getWhatsAppStatus,
+
+    waitForWhatsAppReady
 };
