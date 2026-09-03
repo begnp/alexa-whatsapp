@@ -1,5 +1,11 @@
 const Alexa = require('ask-sdk-core');
 
+const {
+    SendMessageIntentHandler
+} = require(
+    './handlers/send-message'
+);
+
 
 const LaunchRequestHandler = {
 
@@ -109,6 +115,36 @@ const CancelAndStopIntentHandler = {
     }
 };
 
+const SessionEndedRequestHandler = {
+
+    canHandle(handlerInput) {
+
+        return Alexa.getRequestType(
+            handlerInput.requestEnvelope
+        ) === 'SessionEndedRequest';
+    },
+
+
+    handle(handlerInput) {
+
+        const request =
+            handlerInput.requestEnvelope.request;
+
+        console.log(
+            '[Alexa] Sessão encerrada:',
+            request.reason
+        );
+
+        /*
+         * SessionEndedRequest não deve
+         * produzir resposta falada.
+         */
+        return handlerInput
+            .responseBuilder
+            .getResponse();
+    }
+};
+
 
 const ErrorHandler = {
 
@@ -116,11 +152,31 @@ const ErrorHandler = {
         return true;
     },
 
+
     handle(handlerInput, error) {
 
-        console.error('[Alexa] Erro:', error);
+        const request =
+            handlerInput.requestEnvelope.request;
 
-        return handlerInput.responseBuilder
+        console.error(
+            '[Alexa] Erro:',
+            error
+        );
+
+        console.error(
+            '[Alexa] Request type:',
+            request?.type
+        );
+
+        console.error(
+            '[Alexa] Intent:',
+            request?.intent?.name
+            ?? '(não aplicável)'
+        );
+
+
+        return handlerInput
+            .responseBuilder
             .speak(
                 'Ocorreu um erro no servidor local.'
             )
@@ -144,8 +200,10 @@ const skill = Alexa.SkillBuilders
     .addRequestHandlers(
         LaunchRequestHandler,
         HelloWorldIntentHandler,
+        SendMessageIntentHandler,
         HelpIntentHandler,
-        CancelAndStopIntentHandler
+        CancelAndStopIntentHandler,
+        SessionEndedRequestHandler
     )
     .addErrorHandlers(
         ErrorHandler
